@@ -1,0 +1,25 @@
+#! /usr/bin/env expect
+
+set vm [lindex $argv 0] 
+set username [lindex $argv 1]
+set password [lindex $argv 2]
+
+#puts "vm: $vm => username: $username => password: $password"
+
+log_user 0
+
+spawn virsh -c qemu:///system console $vm
+sleep 1
+send -- "\n"
+while true {
+  expect "Escape character is" { send -- "\n" }
+  expect "login:" { send -- "$username\n" }
+  expect "Password:" { send -- "$password\n" }
+  expect "$username\@" { break }
+}
+log_user 1
+#send "ifconfig -a\n"
+send -- "netstat -ni --libxo json\n"
+expect "$username\@freebsd"
+log_user 0
+send -- "exit\n"

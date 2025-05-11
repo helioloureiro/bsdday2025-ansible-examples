@@ -1,0 +1,13 @@
+- name: primeiro exemplo de ansible
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: pegando o nome da maquina
+      command: hostname
+      register: result
+    - debug: var=result.stdout
+    - name: pegando o tipo de maquina
+      command: uname -a
+      register: result2
+    - debug: var=result2.stdout

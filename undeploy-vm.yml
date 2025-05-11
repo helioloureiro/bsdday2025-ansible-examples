@@ -1,0 +1,57 @@
+- name: removendo de uma VM remota
+  hosts: goosfraba
+  become: false
+  vars:
+   - pool_name: homedir
+   - virsh_opts: -c qemu:///system
+  tasks:
+    - debug: var=vm_name
+    - name: listando os pools disponiveis
+      command: "virsh {{ virsh_opts }} pool-list --all"
+      register: result
+    - debug: var=result.stdout_lines
+
+    - name: dando refresh no pool
+      command: "virsh {{ virsh_opts }} pool-refresh {{ pool_name }}"
+    - name: pegando os volumes disponiveis como json
+      shell: "virsh {{ virsh_opts }} vol-list {{ pool_name }} | /home/helio/bin/virsh-json"
+      register: result
+    - debug: var=result.stdout_lines
+
+    - name: pegando o resultado como json
+      set_fact:
+        vol_list_homedir: "{{ result.stdout }}"
+    - debug: var=vol_list_homedir
+
+    - name: "pegando o disco que tem o mesmo nome que o que {{ vm_name }}"
+      set_fact:
+        volume: "{{ vol_list_homedir[item].Name }}"
+      when: vol_list_homedir[item].Name | regex_search(vm_name)
+      loop: "{{ range(0, vol_list_homedir | length) | list }}"
+    - debug: var=volume
+
+    - name: "parando a vm {{ vm_name }}"
+      community.libvirt.virt:
+        name: '{{ vm_name }}'
+        state: destroyed
+        uri: 'qemu:///system'
+
+    # - name: "removendo a VM completamente"
+    #   community.libvirt.virt:
+    #     name: '{{ vm_name }}'
+    #     state: undefine
+    #     uri: 'qemu:///system'
+
+    - name: removendo a VM completamente
+      command: "virsh {{ virsh_opts }} undefine {{ vm_name }}"
+
+    - name: removendo o disco
+      command: "virsh {{ virsh_opts }} vol-delete {{ volume }} --pool {{ pool_name }}"
+
+    - name: removendo do inventorio
+      delegate_to: localhost
+      lineinfile:
+        path: ./inventory
+        regex: "^{{ vm_name }}.*"
+        state: absent
+

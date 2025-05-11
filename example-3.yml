@@ -1,0 +1,14 @@
+- name: terceiro exemplo de ansible
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: pegando o nome da maquina remota
+      command: hostname
+      register: result
+    - debug: var=result.stdout
+    - name: pegando o nome da maquina local
+      delegate_to: localhost
+      command: hostname
+      register: result2
+    - debug: var=result2.stdout

@@ -1,0 +1,42 @@
+- name: quinto exemplo de ansible
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - debug: var=inventory_hostname
+    - debug: var=ansible_distribution
+
+    - name: atualizando o apt
+      apt:
+        update_cache: true
+      when: ansible_distribution == "Ubuntu"
+
+    - name: adicionando pacotes
+      ansible.builtin.package:
+        name:
+          - nginx
+          - jq
+
+    - name: corrigindo o hostname pra bater o nome da vm
+      hostname:
+        name: "{{ inventory_hostname }}"
+      when: ansible_distribution != "Ubuntu"
+
+    - name: e usando o systemd pra corregir o hostname
+      hostname:
+        name: "{{ inventory_hostname }}"
+        use: systemd
+      when: ansible_distribution == "Ubuntu"
+
+    - name: rebootar a VM
+      reboot:
+        reboot_timeout: 300
+
+    - name: verificando o hostname
+      command: hostname
+      register: result
+
+    - debug: var=result.stdout
+
+
+

@@ -1,0 +1,94 @@
+- name: fazendo deploy de uma VM remota
+  hosts: goosfraba
+  become: false
+  vars:
+   - BSD_IMAGE: FreeBSD-14.2-RELEASE-amd64-BASIC-CLOUDINIT.ufs.raw
+   - pool_name: homedir
+   - imagem_destino: "{{ vm_name }}.raw"
+   - virsh_opts: -c qemu:///system
+  tasks:
+    - name: listando os pools disponiveis
+      command: "virsh {{ virsh_opts }} pool-list --all"
+      register: result
+    - debug: var=result.stdout_lines
+    - name: criando um clone de disco pra ser usado
+      command: "virsh {{ virsh_opts }} vol-clone {{ BSD_IMAGE }} {{ imagem_destino }} --pool {{ pool_name }}"
+      register: result
+      failed_when: result.rc != 0
+    - name: pegando a informaçao do disco criado
+      command: "virsh {{ virsh_opts }} vol-info {{ imagem_destino }} --pool {{ pool_name }}"
+      register: result
+    - debug: var=result.stdout_lines
+    - name: generate volume information
+      set_fact:
+        volume: '/home/libvirt-images/{{ imagem_destino }}'
+    - name: generate random mac mac_address
+      delegate_to: localhost
+      command: ./scripts/generate-mac.py
+      register: result
+    - debug: var=result.stdout
+    - name: saving random mac generated
+      set_fact:
+        mac_address: '{{ result.stdout }}'
+    - debug: var=vm_name
+    - debug: var=volume
+    - debug: var=mac_address
+    - name: Criando a VM usando libvirt
+      community.libvirt.virt:
+        command: define
+        xml: "{{ lookup('template', 'create-freebsd.xml.j2') }}"
+        uri: 'qemu:///system'
+
+    - name: "iniciando a vm {{ vm_name }}"
+      community.libvirt.virt:
+        name: '{{ vm_name }}'
+        state: running
+        uri: 'qemu:///system'
+
+    - name: removendo processos travados do virsh
+      command: pkill -9 virsh
+      ignore_errors: true
+
+    - name: rodando o script pra pegar o endereço de rede
+      script: "scripts/get_ifconfig_virt.exp {{ vm_name }} root freebsd"
+      register: result
+      failed_when: result.stdout_lines | length < 3
+      retries: 10
+      delay: 3
+
+    - debug: var=result.stdout_lines
+    - name: pegando o resultado em json
+      set_fact:
+        result_json: "{{ result.stdout_lines[2] }}"
+
+    - debug: var=result_json
+    - name: pegando as interfaces
+      set_fact:
+        interfaces: "{{ result_json.statistics.interface }}"
+
+    - debug: var=interfaces
+    - name: pegando as redes que nao sao de loopback
+      set_fact:
+        vtnet0: "{{ interfaces | json_query(query) }}"
+      vars:
+        query: "[?name=='vtnet0']"
+
+    - debug: var=vtnet0
+
+    - name: filtrando pra somente IPv4
+      set_fact:
+        ipv4: "{{ vtnet0 | json_query(query) }}"
+      vars:
+        query: "[?network=='192.168.11.0/24']"
+
+    - debug: var=ipv4
+    - debug: var=ipv4[0].address
+
+    - name: inserindo no inventorio
+      delegate_to: localhost
+      lineinfile:
+        dest: ./inventory
+        regexp: '\[virsh\]'
+        insertafter: '\[virsh\]'
+        line: "[virsh]\n{{ vm_name }} ansible_host={{ ipv4[0].address }} ansible_user=root ansible_password=freebsd"
+        state: present

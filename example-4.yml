@@ -1,0 +1,16 @@
+- name: quarto exemplo de ansible
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: pegando o nome da maquina
+      command: hostname
+      delegate_to: localhost
+      register: result
+    - debug: var=result.stdout
+    - name: usando jinja2 pra templating
+      command: "echo \"{{ variavel }}\""
+      delegate_to: localhost
+      register: result
+    - debug: var=result.stdout
+      
