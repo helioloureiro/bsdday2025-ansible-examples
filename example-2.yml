@@ -11,3 +11,4 @@
       command: uname -a
       register: result2
     - debug: var=result2.stdout
+    - debug: var=result2

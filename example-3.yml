@@ -1,5 +1,5 @@
 - name: terceiro exemplo de ansible
-  hosts: all
+  hosts: virsh
   gather_facts: true
 
   tasks:

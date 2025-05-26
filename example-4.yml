@@ -1,5 +1,5 @@
 - name: quarto exemplo de ansible
-  hosts: all
+  hosts: virsh
   gather_facts: false
 
   tasks:
@@ -13,4 +13,5 @@
       delegate_to: localhost
       register: result
     - debug: var=result.stdout
+    - debug: var=variavel
       

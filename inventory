@@ -1,11 +1,18 @@
 [virsh]
-linuxday2025-1 ansible_host=192.168.11.154 ansible_user=root ansible_password=freebsd
+ubuntu2025-1 ansible_host=192.168.11.182 ansible_user=root ansible_password=freebsd
 bsdday2025-1 ansible_host=192.168.11.232 ansible_user=root ansible_password=freebsd
-bsdday2025-2 ansible_host=192.168.11.169 ansible_user=root ansible_password=freebsd
-bsdday2025-3 ansible_host=192.168.11.131 ansible_user=root ansible_password=freebsd
-ubuntu-bsdday2025-1 ansible_host=192.168.11.154 ansible_user=root ansible_password=freebsd
-ubuntuday2025-3 ansible_host=192.168.11.154 ansible_user=root ansible_password=freebsd
 
+[linux]
+ubuntu2025-1
+
+[freebsd]
+bsdday2025-1
+
+[arch]
+goosfraba
+
+[arch:vars]
+goosfraba=helio.truta.org 
 
 [virsh:vars]
 ansible_ssh_common_args='-o ProxyCommand="ssh -W %h:%p -q helio@helio.truta.org"'
