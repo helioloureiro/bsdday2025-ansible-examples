@@ -1,0 +1,8 @@
+---
+- name: lendo o segredo de um vault
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - "env/secret.yml"
+  tasks:
+    - debug: var=password
