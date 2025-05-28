@@ -1,5 +1,5 @@
 - name: instalando docker numa VM
-  hosts: all
+  hosts: virsh
   gather_facts: yes
   vars:
     keyrings_dir: /etc/apt/keyrings
